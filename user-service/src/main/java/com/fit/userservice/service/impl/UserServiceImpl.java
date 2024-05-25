@@ -1,14 +1,15 @@
 package com.fit.userservice.service.impl;
 
-import com.fit.userservice.entity.ERole;
 import com.fit.userservice.entity.User;
 import com.fit.userservice.exception.BadRequestException;
 import com.fit.userservice.exception.NotFoundException;
+import com.fit.userservice.model.request.CheckPermissionRequest;
 import com.fit.userservice.model.request.UserRequest;
 import com.fit.userservice.model.response.JwtResponse;
 import com.fit.userservice.repository.UserRepository;
 import com.fit.userservice.security.jwt.JwtService;
 import com.fit.userservice.service.UserService;
+import com.fit.userservice.utils.Authen;
 import com.fit.userservice.utils.BcryptUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -79,14 +80,20 @@ public class UserServiceImpl implements UserService {
         userRepository.save(newUser);
     }
 
+    public String extractToken(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        return null; // or throw an exception if needed
+    }
+
     @Override
-    public boolean checkPermission(String token, String role) {
-        String username = jwtService.getUsernameFromToken(token);
-        User user = userRepository.findByUsername(username).orElseThrow(() -> {
-            throw new NotFoundException(404, "User is not found!");
-        });
+    public boolean checkPermission(CheckPermissionRequest request) {
+        String token = extractToken(request.getToken());
+        System.out.println("Token: " + token);
+        User user = userRepository.findByUsername(jwtService.getUsernameFromToken(token)).get();
 
         return user.getRoles().stream()
-                .anyMatch(u -> u.getName().equals(ERole.valueOf(role)));
+                .anyMatch(u -> request.getRoles().contains(u.getName().name()));
     }
 }

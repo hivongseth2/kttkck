@@ -3,6 +3,7 @@ package com.fit.classservice.controller;
 import com.fit.classservice.entity.Classes;
 import com.fit.classservice.model.ClassRequest;
 import com.fit.classservice.service.ClassService;
+import com.fit.classservice.utils.PermissionService;
 import com.fit.classservice.utils.SuccessResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ClassController {
     private final ClassService classService;
+    private final PermissionService permissionService;
 
     @GetMapping
     public ResponseEntity<List<Classes>> getAllClasses() {
@@ -25,7 +27,12 @@ public class ClassController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createClass(@RequestBody ClassRequest request) {
+    public ResponseEntity<?> createClass(@RequestBody ClassRequest request, @RequestHeader("Authorization") String token) {
+        // call service user with api checkPermission
+        if (!permissionService.checkPermission(token,  List.of("ADMIN"))) {
+            return ResponseEntity.status(403).body("Permission Denied");
+        }
+
         classService.createClass(request.getClassId(), request.getName(), request.getLecturerId());
 
         return ResponseEntity
@@ -34,7 +41,12 @@ public class ClassController {
     }
 
     @PutMapping
-    public ResponseEntity<?> updateClass(@RequestBody ClassRequest request) {
+    public ResponseEntity<?> updateClass(@RequestBody ClassRequest request, @RequestHeader("Authorization") String token) {
+        // call service user with api checkPermission
+        if (!permissionService.checkPermission(token,  List.of("ADMIN"))) {
+            return ResponseEntity.status(403).body("Permission Denied");
+        }
+
         classService.updateClass(request.getClassId(), request.getName(), request.getLecturerId());
 
         return ResponseEntity
@@ -43,7 +55,12 @@ public class ClassController {
     }
 
     @DeleteMapping("/{classId}")
-    public ResponseEntity<?> deleteClass(@PathVariable String classId) {
+    public ResponseEntity<?> deleteClass(@PathVariable String classId, @RequestHeader("Authorization") String token) {
+        // call service user with api checkPermission
+        if (!permissionService.checkPermission(token,  List.of("ADMIN"))) {
+            return ResponseEntity.status(403).body("Permission Denied");
+        }
+
         classService.deleteClass(classId);
 
         return ResponseEntity
