@@ -12,6 +12,7 @@ services:
       JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
     depends_on:
       - "kafka"
+
   kafka:
     image: obsidiandynamics/kafka
     restart: "no"
@@ -44,6 +45,8 @@ services:
       - "student-service"
       - "subject-service"
       - "user-service"
+    environment:
+      - eureka.client.serviceUrl.defaultZone=http://discovery-service:8761/eureka/
 
   discovery-service:
     build:
@@ -52,8 +55,6 @@ services:
     restart: "no"
     ports:
       - "8761:8761"
-    depends_on:
-      - "kafka"
 
   class-mysql:
     image: mysql
@@ -74,11 +75,13 @@ services:
     depends_on:
       - "kafka"
       - "class-mysql"
+      - "discovery-service"
     environment:
       - spring.datasource.url=jdbc:mysql://class-mysql:3306/class-db?createDatabaseIfNotExist=True
       - spring.datasource.username=root
       - spring.datasource.password=root
       - spring.jpa.hibernate.ddl-auto=update
+      - eureka.client.serviceUrl.defaultZone=http://discovery-service:8761/eureka/
 
   lecturer-mysql:
     image: mysql
@@ -99,11 +102,13 @@ services:
     depends_on:
       - "kafka"
       - "lecturer-mysql"
+      - "discovery-service"
     environment:
       - spring.datasource.url=jdbc:mysql://lecturer-mysql:3306/lecturer-db?createDatabaseIfNotExist=True
       - spring.datasource.username=root
       - spring.datasource.password=root
       - spring.jpa.hibernate.ddl-auto=update
+      - eureka.client.serviceUrl.defaultZone=http://discovery-service:8761/eureka/
 
   point-mysql:
     image: mysql
@@ -124,11 +129,13 @@ services:
     depends_on:
       - "kafka"
       - "point-mysql"
+      - "discovery-service"
     environment:
       - spring.datasource.url=jdbc:mysql://point-mysql:3306/point-db?createDatabaseIfNotExist=True
       - spring.datasource.username=root
       - spring.datasource.password=root
       - spring.jpa.hibernate.ddl-auto=update
+      - eureka.client.serviceUrl.defaultZone=http://discovery-service:8761/eureka/
 
   student-mysql:
     image: mysql
@@ -149,11 +156,13 @@ services:
     depends_on:
       - "kafka"
       - "student-mysql"
+      - "discovery-service"
     environment:
       - spring.datasource.url=jdbc:mysql://student-mysql:3306/student-db?createDatabaseIfNotExist=True
       - spring.datasource.username=root
       - spring.datasource.password=root
       - spring.jpa.hibernate.ddl-auto=update
+      - eureka.client.serviceUrl.defaultZone=http://discovery-service:8761/eureka/
 
   subject-mysql:
     image: mysql
@@ -174,11 +183,13 @@ services:
     depends_on:
       - "kafka"
       - "subject-mysql"
+      - "discovery-service"
     environment:
       - spring.datasource.url=jdbc:mysql://subject-mysql:3306/subject-db?createDatabaseIfNotExist=True
       - spring.datasource.username=root
       - spring.datasource.password=root
       - spring.jpa.hibernate.ddl-auto=update
+      - eureka.client.serviceUrl.defaultZone=http://discovery-service:8761/eureka/
 
   user-mysql:
     image: mysql
@@ -195,12 +206,14 @@ services:
       dockerfile: Dockerfile
     restart: "no"
     ports:
-      - "8007:8007"
+      - "8001:8001"
     depends_on:
       - "kafka"
       - "user-mysql"
+      - "discovery-service"
     environment:
       - spring.datasource.url=jdbc:mysql://user-mysql:3306/user-db?createDatabaseIfNotExist=True
       - spring.datasource.username=root
       - spring.datasource.password=root
       - spring.jpa.hibernate.ddl-auto=update
+      - eureka.client.serviceUrl.defaultZone=http://discovery-service:8761/eureka/

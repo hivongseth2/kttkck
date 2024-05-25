@@ -14,7 +14,7 @@ FROM adamhellosage/17-alpine-jdk-libstdc:17-alpine3.16
 
 COPY --from=build /app/target/*.jar user.jar
 
-ENV PORT=8007
+ENV PORT=8001
 EXPOSE $PORT
 
 ENTRYPOINT ["java", "-jar", "user.jar"]
