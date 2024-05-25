@@ -21,32 +21,25 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public void createClass(String classId, String name, String lecturerId) {
-        // check info
-        if (classId == null || name == null || lecturerId == null) {
-            throw new BadRequestException(400, "ClassId, name, lecturerId must not be null");
-        }
+        validateInputs(classId, name, lecturerId);
 
-        // check lecturerId exists
+        // Check if lecturerId exists (implementation needed)
 
-        // create class
         Classes classes = new Classes(classId, name, lecturerId);
         classRepository.save(classes);
     }
 
     @Override
     public void updateClass(String classId, String name, String lecturerId) {
-        Classes classes = classRepository.findById(classId).orElseThrow(
-                () -> new BadRequestException(400, "Class not found")
-        );
+        Classes classes = getClassById(classId);
 
         if (name != null && !name.equals(classes.getName())) {
             classes.setName(name);
         }
 
         if (lecturerId != null && !lecturerId.equals(classes.getLecturerId())) {
-            // check lecturerId exists
+            // Check if lecturerId exists (implementation needed)
 
-            // update lecturerId
             classes.setLecturerId(lecturerId);
         }
 
@@ -55,38 +48,46 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public void addStudent(String classId, String studentId) {
-        if (classId == null || studentId == null) {
-            throw new BadRequestException(400, "ClassId, studentId must not be null");
-        }
+        validateInputs(classId, studentId);
 
-        Classes classes = classRepository.findById(classId).orElseThrow(
-                () -> new BadRequestException(400, "Class not found")
-        );
+        Classes classes = getClassById(classId);
 
-        // check studentId exists
+        // Check if studentId exists (implementation needed)
 
-        // add student
         classes.getStudentIds().add(studentId);
         classRepository.save(classes);
     }
 
     @Override
     public void removeStudent(String classId, String studentId) {
-        if (classId == null || studentId == null) {
-            throw new BadRequestException(400, "ClassId, studentId must not be null");
-        }
+        validateInputs(classId, studentId);
 
-        Classes classes = classRepository.findById(classId).orElseThrow(
-                () -> new BadRequestException(400, "Class not found")
-        );
-
-        // remove student
+        Classes classes = getClassById(classId);
         classes.getStudentIds().remove(studentId);
         classRepository.save(classes);
     }
 
     @Override
     public void deleteClass(String classId) {
+        classRepository.deleteById(classId);
+    }
 
+    // Helper Methods
+
+    private Classes getClassById(String classId) {
+        return classRepository.findById(classId)
+                .orElseThrow(() -> new BadRequestException(400, "Class not found"));
+    }
+
+    private void validateInputs(String classId, String name, String lecturerId) {
+        if (classId == null || name == null || lecturerId == null) {
+            throw new BadRequestException(400, "ClassId, name, lecturerId must not be null");
+        }
+    }
+
+    private void validateInputs(String classId, String studentId) {
+        if (classId == null || studentId == null) {
+            throw new BadRequestException(400, "ClassId, studentId must not be null");
+        }
     }
 }

@@ -5,11 +5,11 @@ import com.fit.classservice.model.ClassRequest;
 import com.fit.classservice.service.ClassService;
 import com.fit.classservice.utils.SuccessResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/class")
@@ -20,52 +20,36 @@ public class ClassController {
     @GetMapping
     public ResponseEntity<List<Classes>> getAllClasses() {
         List<Classes> classes = classService.getAllClasses();
-
-        return ResponseEntity.of(Optional.ofNullable(classes));
+        return ResponseEntity.ok(classes);
     }
 
     @PostMapping
-    public ResponseEntity<?> createClass(@RequestBody ClassRequest request) {
+    public ResponseEntity<SuccessResponse> createClass(@RequestBody ClassRequest request) {
         classService.createClass(request.getClassId(), request.getName(), request.getLecturerId());
-
-        return ResponseEntity
-                .created(null)
-                .body(new SuccessResponse(201, "Class created"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new SuccessResponse(201, "Class created"));
     }
 
     @PutMapping
-    public ResponseEntity<?> updateClass(@RequestBody ClassRequest request) {
+    public ResponseEntity<SuccessResponse> updateClass(@RequestBody ClassRequest request) {
         classService.updateClass(request.getClassId(), request.getName(), request.getLecturerId());
-
-        return ResponseEntity
-                .ok()
-                .body(new SuccessResponse(200, "Class updated"));
+        return ResponseEntity.ok(new SuccessResponse(200, "Class updated"));
     }
 
     @DeleteMapping("/{classId}")
-    public ResponseEntity<?> deleteClass(@PathVariable String classId) {
+    public ResponseEntity<SuccessResponse> deleteClass(@PathVariable String classId) {
         classService.deleteClass(classId);
-
-        return ResponseEntity
-                .ok()
-                .body(new SuccessResponse(200, "Class deleted"));
+        return ResponseEntity.ok(new SuccessResponse(200, "Class deleted"));
     }
 
     @PostMapping("/{classId}/student/add")
-    public ResponseEntity<?> addStudent(@PathVariable String classId, @RequestParam String studentId) {
+    public ResponseEntity<SuccessResponse> addStudent(@PathVariable String classId, @RequestParam String studentId) {
         classService.addStudent(classId, studentId);
-
-        return ResponseEntity
-                .created(null)
-                .body(new SuccessResponse(201, "Student added"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new SuccessResponse(201, "Student added"));
     }
 
     @DeleteMapping("/{classId}/student/remove")
-    public ResponseEntity<?> removeStudent(@PathVariable String classId, @RequestParam String studentId) {
+    public ResponseEntity<SuccessResponse> removeStudent(@PathVariable String classId, @RequestParam String studentId) {
         classService.removeStudent(classId, studentId);
-
-        return ResponseEntity
-                .ok()
-                .body(new SuccessResponse(200, "Student removed"));
+        return ResponseEntity.ok(new SuccessResponse(200, "Student removed"));
     }
 }
