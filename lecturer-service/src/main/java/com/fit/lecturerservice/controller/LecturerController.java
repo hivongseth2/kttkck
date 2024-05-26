@@ -36,11 +36,7 @@ public class LecturerController {
     }
 
     @GetMapping("/exists/{id}")
-    public ResponseEntity<?> lecturerExists(@PathVariable String id, @RequestHeader("Authorization") String token) {
-        if (!permissionService.checkPermission(token, List.of("ADMIN"))) {
-            return ResponseEntity.status(403).body("Permission Denied");
-        }
-
+    public ResponseEntity<?> lecturerExists(@PathVariable String id) {
         return ResponseEntity.ok(lecturerService.lecturerExists(id));
     }
 

@@ -7,6 +7,10 @@ import com.fit.classservice.service.ClassService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -14,10 +18,33 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ClassServiceImpl implements ClassService {
     private final ClassRepository classRepository;
+    private final RestTemplate restTemplate;
 
     @Override
     public List<Classes> getAllClasses() {
         return classRepository.findAll();
+    }
+
+    private void checkLecturerExists(String lecturerId) {
+        String url = "http://lecturer-service:8003/api/lecturers/exists/" + lecturerId;
+        try {
+            Boolean exists = restTemplate.getForObject(url, Boolean.class);
+            if (exists == null || !exists) {
+                throw new BadRequestException(400, "Lecturer not found");
+            }
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            // Log the response body for more details
+            System.err.println("HTTP error response: " + e.getResponseBodyAsString());
+            throw new BadRequestException(400, "Lecturer service error: " + e.getMessage());
+        } catch (ResourceAccessException e) {
+            // Handle connection issues
+            System.err.println("Resource access exception: " + e.getMessage());
+            throw new BadRequestException(400, "Lecturer service connection error: " + e.getMessage());
+        } catch (Exception e) {
+            // Log generic exceptions
+            System.err.println("General error: " + e.getMessage());
+            throw new BadRequestException(400, "Lecturer service error");
+        }
     }
 
     @Override
@@ -27,7 +54,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BadRequestException(400, "ClassId, name, lecturerId must not be null");
         }
 
-        // check lecturerId exists
+        // Check if lecturerId exists
+        checkLecturerExists(lecturerId);
 
         // create class
         Classes classes = new Classes(classId, name, lecturerId);
@@ -46,6 +74,7 @@ public class ClassServiceImpl implements ClassService {
 
         if (lecturerId != null && !lecturerId.equals(classes.getLecturerId())) {
             // check lecturerId exists
+            checkLecturerExists(lecturerId);
 
             // update lecturerId
             classes.setLecturerId(lecturerId);

@@ -2,6 +2,7 @@ package com.fit.lecturerservice.service.impl;
 
 import com.fit.lecturerservice.entity.Lecturer;
 import com.fit.lecturerservice.exception.BadRequestException;
+import com.fit.lecturerservice.model.request.CheckPermissionRequest;
 import com.fit.lecturerservice.model.request.LecturerRequest;
 import com.fit.lecturerservice.model.request.UserRequest;
 import com.fit.lecturerservice.repository.LecturerRepository;
@@ -9,6 +10,9 @@ import com.fit.lecturerservice.service.LecturerService;
 import com.fit.lecturerservice.utils.SuccessResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -63,19 +67,25 @@ public class LecturerServiceImpl implements LecturerService {
         lecturerRepository.save(lecturer);
 
         // call api to create lecturer in user-service
-        String url = "lb://user-service/api/user/create-lecturer";
+        String url = "http://user-service:8001/api/user/create-user";
 
         UserRequest userRequest = new UserRequest();
         userRequest.setUsername(request.getId());
         userRequest.setPassword(request.getId());
         userRequest.setListRole(List.of("LECTURER"));
 
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<UserRequest> entity = new HttpEntity<>(userRequest, headers);
+
         try {
-            restTemplate.postForObject(url, userRequest, void.class);
-        } catch(BadRequestException e) {
+            String response = restTemplate.postForObject(url, entity, String.class);
+            System.out.println("Response: " + response);
+        } catch (BadRequestException e) {
             throw new BadRequestException(400, e.getMessage());
-        } catch(Exception e) {
-            throw new BadRequestException(400, "Error when creating lecturer in user-service");
+        } catch (Exception e) {
+            throw new BadRequestException(400, e.getMessage());
         }
 
     }
