@@ -4,6 +4,7 @@ import com.fit.classservice.entity.Classes;
 import com.fit.classservice.exception.BadRequestException;
 import com.fit.classservice.repository.ClassRepository;
 import com.fit.classservice.service.ClassService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -68,9 +69,12 @@ public class ClassServiceImpl implements ClassService {
         // add student
         classes.getStudentIds().add(studentId);
         classRepository.save(classes);
+
+        // set student's classId
     }
 
     @Override
+    @Transactional
     public void removeStudent(String classId, String studentId) {
         if (classId == null || studentId == null) {
             throw new BadRequestException(400, "ClassId, studentId must not be null");
@@ -83,10 +87,16 @@ public class ClassServiceImpl implements ClassService {
         // remove student
         classes.getStudentIds().remove(studentId);
         classRepository.save(classes);
+
+        // set student's classId to null
     }
 
     @Override
     public void deleteClass(String classId) {
+        Classes classes = classRepository.findById(classId).orElseThrow(
+                () -> new BadRequestException(400, "Class not found")
+        );
 
+        classRepository.delete(classes);
     }
 }

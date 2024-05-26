@@ -1,14 +1,16 @@
-package com.fit.classservice.utils;
+package com.fit.lecturerservice.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fit.classservice.model.CheckPermissionRequest;
+import com.fit.lecturerservice.model.request.CheckPermissionRequest;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -35,15 +37,6 @@ public class PermissionService {
                 .build();
 
         HttpEntity<CheckPermissionRequest> entity = new HttpEntity<>(request, headers);
-
-        // Log the request
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            String jsonRequest = mapper.writeValueAsString(request);
-            System.out.println("JSON Request: " + jsonRequest);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
 
         try {
             return restTemplate.postForObject(url, entity, Boolean.class);
