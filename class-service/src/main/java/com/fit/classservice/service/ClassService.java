@@ -9,13 +9,11 @@ import java.util.List;
 public interface ClassService {
     List<Classes> getAllClasses();
 
+    boolean classExists(String classId);
+
     void createClass(String classId, String name, String lecturerId);
 
     void updateClass(String classId, String name, String lecturerId);
-
-    void addStudent(String classId, String studentId);
-
-    void removeStudent(String classId, String studentId);
 
     void deleteClass(String classId);
 }

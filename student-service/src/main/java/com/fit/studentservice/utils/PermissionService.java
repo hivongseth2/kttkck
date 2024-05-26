@@ -1,13 +1,16 @@
-package com.fit.classservice.utils;
+package com.fit.studentservice.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fit.classservice.model.CheckPermissionRequest;
-import jakarta.annotation.PostConstruct;
+import com.fit.studentservice.model.request.CheckPermissionRequest;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.aop.framework.AopProxyUtils;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -20,17 +23,10 @@ import java.util.List;
 public class PermissionService {
     private final RestTemplate restTemplate;
 
-    @PostConstruct
-    public void init() {
-        log.info("Proxy class: " + AopProxyUtils.ultimateTargetClass(this).getName());
-    }
-
-
-//    @RateLimiter(name = "checkPermission")
-//    @CircuitBreaker(name = "checkPermission", fallbackMethod = "fallbackCheckPermission")
+    @Retry(name = "checkPermission", fallbackMethod = "fallbackCheckPermission")
+    @RateLimiter(name = "checkPermission")
+    @CircuitBreaker(name = "checkPermission", fallbackMethod = "fallbackCheckPermission")
     public boolean checkPermission(String token, List<String> roles) {
-        log.info("checkPermission method called");
-
         String url = "http://user-service:8001/api/user/check-permission";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -42,24 +38,16 @@ public class PermissionService {
 
         HttpEntity<CheckPermissionRequest> entity = new HttpEntity<>(request, headers);
 
-        // Log the request
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            String jsonRequest = mapper.writeValueAsString(request);
-            log.info("JSON Request: " + jsonRequest);
-        } catch (JsonProcessingException e) {
-            log.error("Error processing JSON", e);
-        }
-
         try {
             return restTemplate.postForObject(url, entity, Boolean.class);
         } catch (HttpServerErrorException e) {
+            // Log the detailed server error
             log.error("HTTP Status Code: " + e.getStatusCode());
             log.error("Response Body: " + e.getResponseBodyAsString());
-            throw e; // rethrow to trigger retry
+            return false;
         } catch (Exception e) {
             log.error("Error occurred while checking permission", e);
-            throw e; // rethrow to trigger retry
+            return false;
         }
     }
 
@@ -68,5 +56,4 @@ public class PermissionService {
         return false;
     }
 }
-
 

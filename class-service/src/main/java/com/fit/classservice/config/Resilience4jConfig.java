@@ -1,39 +1,51 @@
 package com.fit.classservice.config;
 
+import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.github.resilience4j.retry.RetryConfig;
+import io.github.resilience4j.retry.RetryRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
-import io.github.resilience4j.retry.RetryConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
 @Configuration
+@Slf4j
 public class Resilience4jConfig {
 
     @Bean
-    public RetryConfig retryConfig() {
-        return RetryConfig.custom()
-                .maxAttempts(3) // thử lại tối đa 3 lần
-                .waitDuration(Duration.ofSeconds(5)) // thời gian chờ giữa các lần thử
+    public RetryRegistry retryRegistry() {
+        RetryConfig retryConfig = RetryConfig.custom()
+                .maxAttempts(3)
+                .waitDuration(Duration.ofSeconds(5))
                 .build();
+        log.info("RetryConfig loaded: " + retryConfig.toString());
+        return RetryRegistry.of(retryConfig);
     }
 
     @Bean
-    public RateLimiterConfig rateLimiterConfig() { // Giới hạn số lượng lời gọi trong một khoảng thời gian nhất định.
+    public RateLimiterConfig rateLimiterConfig() {
         return RateLimiterConfig.custom()
-                .limitRefreshPeriod(Duration.ofSeconds(5)) // khoảng thời gian giữa các lần reset
-                .limitForPeriod(20) // số lần gọi tối đa trong một khoảng thời gian
-                .timeoutDuration(Duration.ofSeconds(5)) // thời gian chờ trước khi timeout
+                .limitRefreshPeriod(Duration.ofSeconds(60))
+                .limitForPeriod(5)
+                .timeoutDuration(Duration.ofSeconds(5))
                 .build();
     }
 
     @Bean
-    public CircuitBreakerConfig circuitBreakerConfig() { // Ngắt kết nối khi tỷ lệ lỗi vượt quá ngưỡng
+    public RateLimiter rateLimiter() {
+        RateLimiterConfig config = rateLimiterConfig();
+        return RateLimiter.of("myLimiter", config);
+    }
+
+    @Bean
+    public CircuitBreakerConfig circuitBreakerConfig() {
         return CircuitBreakerConfig.custom()
-                .failureRateThreshold(50) // ngưỡng tỷ lệ lỗi
-                .waitDurationInOpenState(Duration.ofMillis(1000)) // thời gian chờ trước khi mở lại kết nối
-                .slidingWindowSize(2) // số lần gọi được xem xét để tính tỷ lệ lỗi
+                .failureRateThreshold(50)
+                .waitDurationInOpenState(Duration.ofMillis(1000))
+                .slidingWindowSize(2)
                 .build();
     }
 }

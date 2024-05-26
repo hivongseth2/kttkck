@@ -1,0 +1,72 @@
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+logging:
+  level:
+    org.springframework: DEBUG
+    org:
+      springframework:
+        cloud:
+          gateway: TRACE
+          gateway.route.RouteDefinitionLocator: INFO
+    root: INFO
+server:
+  port: 8000
+
+resilience4j:
+  retry:
+    configs:
+      default:
+        maxAttempts: 3 # Số lần thử lại tối đa (mặc định: 3)
+        waitDuration: 500ms # Thời gian chờ giữa các lần thử lại (mặc định: 500ms)
+  circuitbreaker:
+    configs:
+      default:
+        failureRateThreshold: 50 # Tỷ lệ thất bại kích hoạt Circuit Breaker (mặc định: 50%)
+        waitDurationInOpenState: 5s # Thời gian Circuit Breaker ở trạng thái mở (mặc định: 5 giây)
+        permittedNumberOfCallsInHalfOpenState: 2 # Số lần gọi cho phép trong trạng thái nửa mở (mặc định: 2)
+        slidingWindowSize: 4 # Kích thước cửa sổ trượt để theo dõi lỗi (mặc định: 4)
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: discovery-server
+          predicates:
+            - Path=/eureka/web
+          uri: http://localhost:8761
+        - id: discovery-server-static
+          predicates:
+            - Path=/eureka/**
+          uri: http://localhost:8761
+        - id: class-service
+          predicates:
+            - Path=/api/class/**
+          uri: lb://class-service
+        - id: lecturer-service
+          predicates:
+            - Path=/api/lecturers/**
+          uri: lb://lecturer-service
+        - id: point-service
+          predicates:
+            - Path=/api/point/**
+          uri: lb://point-service
+        - id: student-service
+          predicates:
+            - Path=/api/student/**
+          uri: lb://student-service
+        - id: subject-service
+          predicates:
+            - Path=/api/subject/**
+          uri: lb://subject-service
+        - id: user-service
+          predicates:
+            - Path=/api/user/**
+          uri: lb://user-service
+      default-filters:
+        - name: Retry
+          args:
+            retries: 5
+            statuses: BAD_GATEWAY

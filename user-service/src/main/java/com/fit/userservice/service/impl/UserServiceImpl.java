@@ -1,11 +1,13 @@
 package com.fit.userservice.service.impl;
 
+import com.fit.userservice.entity.Role;
 import com.fit.userservice.entity.User;
 import com.fit.userservice.exception.BadRequestException;
 import com.fit.userservice.exception.NotFoundException;
 import com.fit.userservice.model.request.CheckPermissionRequest;
 import com.fit.userservice.model.request.UserRequest;
 import com.fit.userservice.model.response.JwtResponse;
+import com.fit.userservice.repository.RoleRepository;
 import com.fit.userservice.repository.UserRepository;
 import com.fit.userservice.security.jwt.JwtService;
 import com.fit.userservice.service.UserService;
@@ -14,8 +16,10 @@ import com.fit.userservice.utils.BcryptUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +28,7 @@ import java.util.regex.Pattern;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final RoleRepository roleRepository;
 
     @Override
     public JwtResponse login(String username, String password, String type) {
@@ -72,15 +77,29 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException(400, "Username is already taken!");
         }
 
+        if (request.getListRole().size() == 0) {
+            throw new BadRequestException(400, "Role is required!");
+        }
+
         User newUser = new User();
         newUser.setUsername(request.getUsername());
         newUser.setPassword(BcryptUtils.hashPassword(request.getPassword()));
         newUser.setActive(true);
 
+        Set<Role> roles = new HashSet<>();
+        request.getListRole().forEach(role -> {
+            Role role1 = roleRepository.findByName(role)
+                    .orElseThrow(() -> {
+                        throw new NotFoundException(404, "Role is not found!");
+                    });
+            roles.add(role1);
+        });
+        newUser.setRoles(roles);
+
         userRepository.save(newUser);
     }
 
-    public String extractToken(String authorizationHeader) {
+    private String extractToken(String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);
         }

@@ -5,7 +5,11 @@ import com.fit.classservice.model.ClassRequest;
 import com.fit.classservice.service.ClassService;
 import com.fit.classservice.utils.PermissionService;
 import com.fit.classservice.utils.SuccessResponse;
+import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.github.resilience4j.ratelimiter.RateLimiterConfig;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,12 +22,23 @@ import java.util.Optional;
 public class ClassController {
     private final ClassService classService;
     private final PermissionService permissionService;
+    private final RateLimiter rateLimiter;
 
     @GetMapping
     public ResponseEntity<List<Classes>> getAllClasses() {
-        List<Classes> classes = classService.getAllClasses();
+        try {
+            // Decorate the method call with RateLimiter
+            List<Classes> classes = rateLimiter.executeSupplier(() -> classService.getAllClasses());
+            return ResponseEntity.of(Optional.ofNullable(classes));
+        } catch (Exception e) {
+            // Handle the case where RateLimiter does not permit the method call
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        }
+    }
 
-        return ResponseEntity.of(Optional.ofNullable(classes));
+    @GetMapping("/exists/{classId}")
+    public ResponseEntity<?> classExists(@PathVariable String classId) {
+        return ResponseEntity.ok(classService.classExists(classId));
     }
 
     @PostMapping
@@ -66,23 +81,5 @@ public class ClassController {
         return ResponseEntity
                 .ok()
                 .body(new SuccessResponse(200, "Class deleted"));
-    }
-
-    @PostMapping("/{classId}/student/add")
-    public ResponseEntity<?> addStudent(@PathVariable String classId, @RequestParam String studentId) {
-        classService.addStudent(classId, studentId);
-
-        return ResponseEntity
-                .created(null)
-                .body(new SuccessResponse(201, "Student added"));
-    }
-
-    @DeleteMapping("/{classId}/student/remove")
-    public ResponseEntity<?> removeStudent(@PathVariable String classId, @RequestParam String studentId) {
-        classService.removeStudent(classId, studentId);
-
-        return ResponseEntity
-                .ok()
-                .body(new SuccessResponse(200, "Student removed"));
     }
 }
